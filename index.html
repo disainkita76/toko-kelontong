@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toko Aneka - Kasir & Stokis Kelontong</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+            },
+            ocean: {
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome Free Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Libraries CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-slate-100 text-slate-800 flex h-screen overflow-hidden select-none">
+
+  <!-- ================= 0. LAYAR LOGIN (KASIR & ADMIN) ================= -->
+  <div id="login-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl shadow-black/80 flex flex-col fade-in">
+      
+      <!-- Header Login Brand -->
+      <div class="p-6 bg-gradient-to-b from-slate-800 to-slate-900 border-b border-slate-800 text-center relative">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-3">
+          <i class="fa-solid fa-store text-3xl text-white"></i>
+        </div>
+        <h2 class="text-xl font-black tracking-wide text-white">Toko Aneka</h2>
+        <p class="text-xs text-emerald-400 font-medium mt-0.5">Sistem Kasir & Manajemen Toko Kelontong</p>
+        <div class="mt-3 flex justify-center">
+          <span id="login-role-badge" class="px-3 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400 font-semibold border border-emerald-500/30 inline-flex items-center gap-1.5">
+            <i class="fa-solid fa-cash-register"></i> Masuk Sebagai Kasir
+          </span>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-5">
+        <!-- Tab Pemilihan Peran (Role Selector) -->
+        <div class="flex p-1 bg-slate-800/90 rounded-2xl border border-slate-700/60 text-xs font-semibold">
+          <button type="button" id="tab-role-kasir" onclick="authManager.setRoleTab('kasir')"
+            class="flex-1 py-2.5 text-xs font-bold rounded-xl transition shadow-sm bg-emerald-600 text-white flex items-center justify-center gap-2">
+            <i class="fa-solid fa-cash-register"></i>
+            <span>Kasir (POS)</span>
+          </button>
+          <button type="button" id="tab-role-admin" onclick="authManager.setRoleTab('admin')"
+            class="flex-1 py-2.5 text-xs font-bold rounded-xl transition text-slate-400 hover:text-white flex items-center justify-center gap-2">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Admin Toko</span>
+          </button>
+        </div>
+
+        <!-- Alert Pesan Error Login -->
+        <div id="login-error-alert" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2.5">
+          <i class="fa-solid fa-triangle-exclamation shrink-0 text-sm"></i>
+          <span id="login-error-text">Username atau password salah!</span>
+        </div>
+
+        <!-- Form Login -->
+        <form onsubmit="event.preventDefault(); authManager.login(document.getElementById('login-username').value, document.getElementById('login-password').value, document.getElementById('login-remember').checked);" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Username</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-user text-sm"></i>
+              </span>
+              <input type="text" id="login-username" value="kasir" required autocomplete="username" placeholder="Ketik username..."
+                class="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-500 transition">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Kata Sandi / Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-lock text-sm"></i>
+              </span>
+              <input type="password" id="login-password" value="kasir123" required autocomplete="current-password" placeholder="Ketik password..."
+                class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-800/80 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 placeholder-slate-500 transition">
+              <button type="button" onclick="authManager.togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-white">
+                <i id="login-password-icon" class="fa-solid fa-eye text-sm"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <label class="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-300">
+              <input type="checkbox" id="login-remember" checked class="rounded bg-slate-800 border-slate-700 text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+              <span>Ingat sesi saya di browser</span>
+            </label>
+          </div>
+
+          <button type="submit" id="btn-login-submit"
+            class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-emerald-900/30 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span>Masuk ke Aplikasi</span>
+          </button>
+        </form>
+
+        <!-- Quick Login Demo Buttons (Sekali Klik) -->
+        <div class="pt-3 border-t border-slate-800">
+          <p class="text-[11px] font-semibold text-slate-400 text-center mb-2.5 uppercase tracking-wider">
+            Masuk Cepat Sekali Klik (Demo Akun)
+          </p>
+          <div class="grid grid-cols-2 gap-2.5">
+            <button type="button" onclick="authManager.quickLogin('kasir')"
+              class="p-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-semibold text-xs flex flex-col items-center justify-center gap-1 transition">
+              <span class="flex items-center gap-1.5 font-bold">
+                <i class="fa-solid fa-cash-register"></i> Akun Kasir
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">kasir / kasir123</span>
+            </button>
+
+            <button type="button" onclick="authManager.quickLogin('admin')"
+              class="p-2.5 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 font-semibold text-xs flex flex-col items-center justify-center gap-1 transition">
+              <span class="flex items-center gap-1.5 font-bold">
+                <i class="fa-solid fa-user-shield"></i> Akun Admin
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono">admin / admin123</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Info -->
+      <div class="p-3.5 bg-slate-950/60 border-t border-slate-800 text-center text-[11px] text-slate-500">
+        Toko Aneka POS v2.0 • Autentikasi Offline Berbasis IndexedDB
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="w-64 bg-slate-900 text-white flex flex-col justify-between shrink-0 shadow-xl z-20">
+    <div class="flex flex-col flex-1 overflow-y-auto">
+      <!-- Store Header -->
+      <div class="p-5 border-b border-slate-800 flex items-center space-x-3 shrink-0">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+          <i class="fa-solid fa-store text-xl text-white"></i>
+        </div>
+        <div>
+          <h1 id="sidebar-store-name" class="font-bold text-lg leading-tight tracking-wide text-white">Toko Aneka</h1>
+          <p class="text-xs text-emerald-400 font-medium flex items-center gap-1.5 mt-0.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Toko Kelontong & Sembako
+          </p>
+        </div>
+      </div>
+
+      <!-- Nav Menu Items -->
+      <nav class="p-3 space-y-1.5 text-sm font-medium flex-1">
+        <button onclick="app.switchView('pos')" id="nav-pos" class="nav-item active w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-slate-300 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-cash-register w-5 text-center text-base"></i>
+          <span>Kasir (POS)</span>
+        </button>
+
+        <button onclick="app.switchView('stock')" id="nav-stock" class="nav-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-slate-300 hover:bg-slate-800 hover:text-white">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-boxes-stacked w-5 text-center text-base"></i>
+            <span>Stokis Barang</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[9px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded">Admin</span>
+            <span id="badge-low-stock" class="hidden px-2 py-0.5 text-xs font-bold bg-amber-500 text-slate-950 rounded-full">0</span>
+          </div>
+        </button>
+
+        <button onclick="app.switchView('categories')" id="nav-categories" class="nav-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-slate-300 hover:bg-slate-800 hover:text-white">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-tags w-5 text-center text-base"></i>
+            <span>Kategori Produk</span>
+          </div>
+          <span class="text-[9px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded">Admin</span>
+        </button>
+
+        <button onclick="app.switchView('daily')" id="nav-daily" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition text-slate-300 hover:bg-slate-800 hover:text-white">
+          <i class="fa-solid fa-calendar-day w-5 text-center text-base"></i>
+          <span>Transaksi Harian</span>
+        </button>
+
+        <button onclick="app.switchView('monthly')" id="nav-monthly" class="nav-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-slate-300 hover:bg-slate-800 hover:text-white">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-chart-line w-5 text-center text-base"></i>
+            <span>Transaksi Bulanan</span>
+          </div>
+          <span class="text-[9px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded">Admin</span>
+        </button>
+
+        <button onclick="app.switchView('settings')" id="nav-settings" class="nav-item w-full flex items-center justify-between px-4 py-3 rounded-xl transition text-slate-300 hover:bg-slate-800 hover:text-white">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-sliders w-5 text-center text-base"></i>
+            <span>Pengaturan & Backup</span>
+          </div>
+          <span class="text-[9px] font-semibold bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.5 rounded">Admin</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- User Profile & Logout Section in Sidebar -->
+    <div class="px-3 pb-2 pt-2 border-t border-slate-800/80">
+      <div class="p-3 bg-slate-800/80 rounded-2xl border border-slate-700/60 flex items-center justify-between">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div id="sidebar-user-avatar" class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shrink-0">
+            <i class="fa-solid fa-user-tag text-xs"></i>
+          </div>
+          <div class="overflow-hidden">
+            <div class="flex items-center gap-1.5">
+              <span id="sidebar-user-name" class="font-bold text-xs text-white truncate max-w-[85px]">Kasir 1</span>
+              <span id="sidebar-user-badge" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">KASIR</span>
+            </div>
+            <p id="sidebar-user-role" class="text-[10px] text-slate-400 truncate">Kasir Toko</p>
+          </div>
+        </div>
+        <button onclick="authManager.logout()" title="Keluar / Ganti Akun"
+          class="w-8 h-8 rounded-xl bg-slate-700/80 hover:bg-rose-600 hover:text-white text-slate-300 flex items-center justify-center transition shrink-0 ml-1">
+          <i class="fa-solid fa-right-from-bracket text-xs"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-4 border-t border-slate-800 text-xs text-slate-400">
+      <div class="flex items-center justify-between">
+        <span id="current-clock" class="font-mono text-slate-300">00:00:00</span>
+        <span id="current-date" class="text-[11px] text-slate-400">14 Sep 2026</span>
+      </div>
+      <div class="mt-2 text-[11px] text-slate-500 text-center">
+        Toko Aneka POS v2.0 • Multi-Role Ready
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 flex flex-col overflow-hidden">
+    
+    <!-- Top Bar -->
+    <header class="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between shrink-0 shadow-sm">
+      <div class="flex items-center gap-3">
+        <h2 id="page-title" class="text-xl font-bold text-slate-800">Kasir (Point of Sale)</h2>
+        <span id="page-subtitle" class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md font-medium border border-emerald-200">
+          Siap Melayani Transaksi
+        </span>
+      </div>
+
+      <!-- Quick Action Buttons on Header -->
+      <div class="flex items-center gap-3">
+        <!-- Kamera Barcode Scanner Button -->
+        <button onclick="barcodeManager.startCamera('pos')" class="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition">
+          <i class="fa-solid fa-camera"></i>
+          <span>Scan Barcode Kamera</span>
+        </button>
+
+        <button id="top-btn-add-product" onclick="app.showModal('product-modal')" class="flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm transition">
+          <i class="fa-solid fa-plus"></i>
+          <span>Tambah Barang</span>
+        </button>
+
+        <!-- Tombol Logout Cepat -->
+        <button onclick="authManager.logout()" title="Keluar dari sesi akun saat ini"
+          class="flex items-center gap-1.5 border border-slate-200 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 text-slate-600 text-xs font-semibold px-3 py-2 rounded-lg transition">
+          <i class="fa-solid fa-right-from-bracket text-xs"></i>
+          <span class="hidden sm:inline">Keluar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- VIEWS CONTAINER -->
+    <div class="flex-1 overflow-y-auto p-5 relative">
+
+      <!-- ================= 1. POS / KASIR VIEW ================= -->
+      <section id="view-pos" class="h-full flex gap-5">
+        
+        <!-- Left: Product Catalog & Search for POS -->
+        <div class="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          
+          <!-- Barcode & Search Bar -->
+          <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row gap-3 items-center">
+            <!-- Dedicated Barcode Quick Input -->
+            <div class="relative w-full md:w-72">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-barcode text-base"></i>
+              </span>
+              <input type="text" id="pos-barcode-input" placeholder="Scan Barcode / Tekan Enter..." autocomplete="off"
+                class="w-full pl-10 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono">
+            </div>
+
+            <!-- Name / Keyword Search -->
+            <div class="relative flex-1 w-full">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+              </span>
+              <input type="text" id="pos-search-input" placeholder="Cari nama barang (mis: Beras, Indomie, Minyak)..."
+                class="w-full pl-9 pr-3 py-2 text-sm bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+
+            <!-- Camera Scan Shortcut -->
+            <button onclick="barcodeManager.startCamera('pos')" title="Buka Kamera Scanner"
+              class="shrink-0 p-2 text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl border border-slate-200 transition">
+              <i class="fa-solid fa-qrcode text-lg"></i>
+            </button>
+          </div>
+
+          <!-- Category Filter Pills -->
+          <div id="pos-category-pills" class="px-4 py-2.5 bg-white border-b border-slate-100 flex gap-2 overflow-x-auto no-scrollbar">
+            <!-- Rendered by JS -->
+          </div>
+
+          <!-- Products Grid -->
+          <div class="flex-1 overflow-y-auto p-4">
+            <div id="pos-product-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+              <!-- Rendered dynamically -->
+            </div>
+            <div id="pos-empty-state" class="hidden flex flex-col items-center justify-center h-64 text-slate-400">
+              <i class="fa-solid fa-box-open text-4xl mb-2 text-slate-300"></i>
+              <p class="text-sm">Barang tidak ditemukan</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Cart & Payment (Kasir) -->
+        <div class="w-96 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
+          <!-- Cart Header -->
+          <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-cart-shopping text-emerald-600"></i>
+              <h3 class="font-bold text-slate-800">Keranjang Kasir</h3>
+              <span id="pos-cart-count" class="bg-emerald-100 text-emerald-700 text-xs px-2 py-0.5 rounded-full font-bold">0 item</span>
+            </div>
+            <button onclick="app.clearCart()" class="text-xs text-rose-500 hover:text-rose-700 font-semibold hover:underline">
+              Kosongkan
+            </button>
+          </div>
+
+          <!-- Cart Items List -->
+          <div id="pos-cart-items" class="flex-1 overflow-y-auto p-3 space-y-2 divide-y divide-slate-100">
+            <!-- Rendered dynamically -->
+            <div id="pos-cart-empty" class="flex flex-col items-center justify-center h-full text-slate-400 py-12">
+              <div class="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-3 text-slate-300">
+                <i class="fa-solid fa-bag-shopping text-2xl"></i>
+              </div>
+              <p class="text-sm font-medium text-slate-500">Keranjang masih kosong</p>
+              <p class="text-xs text-slate-400 mt-1 text-center">Scan barcode atau klik produk di katalog</p>
+            </div>
+          </div>
+
+          <!-- Cart Calculation & Checkout Area -->
+          <div class="p-4 border-t border-slate-200 bg-slate-50/80 space-y-3">
+            <div class="space-y-1.5 text-xs text-slate-600">
+              <div class="flex justify-between">
+                <span>Subtotal</span>
+                <span id="pos-subtotal" class="font-semibold text-slate-800">Rp 0</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span>Diskon Toko</span>
+                <div class="flex items-center gap-1">
+                  <span class="text-slate-400">Rp</span>
+                  <input type="number" id="pos-discount" value="0" min="0" oninput="app.updateCartTotals()"
+                    class="w-20 px-2 py-0.5 text-right text-xs bg-white border border-slate-300 rounded font-mono">
+                </div>
+              </div>
+            </div>
+
+            <!-- Grand Total -->
+            <div class="p-3 bg-emerald-600 text-white rounded-xl flex items-center justify-between shadow-md shadow-emerald-600/20">
+              <div>
+                <span class="text-[11px] uppercase tracking-wider text-emerald-100 font-semibold block">Total Tagihan</span>
+                <span id="pos-grand-total" class="text-2xl font-black font-mono">Rp 0</span>
+              </div>
+              <i class="fa-solid fa-receipt text-3xl text-emerald-400/40"></i>
+            </div>
+
+            <!-- Checkout Button -->
+            <button onclick="app.openPaymentModal()" id="btn-pay" disabled
+              class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-wallet"></i>
+              <span>Bayar Transaksi (F9)</span>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= 2. STOKIS / INVENTARIS BARANG ================= -->
+      <section id="view-stock" class="hidden h-full flex flex-col space-y-4">
+        
+        <!-- Stock Action & Filter Bar -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+          <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <!-- Search Item -->
+            <div class="relative w-full sm:w-64">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+              </span>
+              <input type="text" id="stock-search" placeholder="Cari nama atau barcode..."
+                class="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <!-- Category Filter -->
+            <select id="stock-category-filter" onchange="app.renderStockList()"
+              class="px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500">
+              <option value="all">Semua Kategori</option>
+            </select>
+
+            <!-- Stock Status Filter -->
+            <select id="stock-status-filter" onchange="app.renderStockList()"
+              class="px-3 py-2 text-sm bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500">
+              <option value="all">Semua Status Stok</option>
+              <option value="low">Stok Menipis / Habis</option>
+              <option value="safe">Stok Aman</option>
+            </select>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button onclick="app.openAddProductModal()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition">
+              <i class="fa-solid fa-plus"></i>
+              <span>Tambah Item Baru</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Stock Table -->
+        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="flex-1 overflow-y-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500 sticky top-0 z-10">
+                <tr>
+                  <th class="py-3 px-4">Barcode / SKU</th>
+                  <th class="py-3 px-4">Nama Produk</th>
+                  <th class="py-3 px-4">Kategori</th>
+                  <th class="py-3 px-4 text-right">Harga Modal (Beli)</th>
+                  <th class="py-3 px-4 text-right">Harga Jual</th>
+                  <th class="py-3 px-4 text-center">Stok</th>
+                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="stock-table-body" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+            <div id="stock-empty" class="hidden text-center py-16 text-slate-400">
+              <i class="fa-solid fa-boxes-packing text-4xl mb-2 text-slate-300"></i>
+              <p class="text-sm">Tidak ada data barang yang sesuai kriteria.</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= 3. MANAJEMEN KATEGORI ================= -->
+      <section id="view-categories" class="hidden h-full flex flex-col space-y-4">
+        <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg">Daftar Kategori Produk</h3>
+            <p class="text-xs text-slate-500">Kelola kelompok produk toko kelontong agar memudahkan pencarian & laporan</p>
+          </div>
+          <button onclick="app.openCategoryModal()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition">
+            <i class="fa-solid fa-plus"></i>
+            <span>Tambah Kategori</span>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto">
+          <div id="categories-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. TRANSAKSI HARIAN ================= -->
+      <section id="view-daily" class="hidden h-full flex flex-col space-y-4">
+        
+        <!-- Filter & Header Harian -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div class="flex items-center gap-3 w-full md:w-auto">
+            <label for="daily-date-picker" class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <i class="fa-regular fa-calendar text-emerald-600"></i>
+              <span>Pilih Tanggal:</span>
+            </label>
+            <input type="date" id="daily-date-picker" onchange="app.loadDailyTransactions()"
+              class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500">
+            <button onclick="app.setTodayDate()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
+              Hari Ini
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button onclick="app.exportDailyCSV()" class="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition">
+              <i class="fa-solid fa-file-csv"></i>
+              <span>Ekspor Laporan (CSV)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Cards Harian -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Total Penjualan -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider">Total Omzet Harian</span>
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i class="fa-solid fa-money-bill-wave"></i>
+              </div>
+            </div>
+            <div id="daily-total-omzet" class="text-2xl font-bold font-mono text-emerald-600">Rp 0</div>
+            <span class="text-[11px] text-slate-400 mt-1 block">Semua transaksi sukses</span>
+          </div>
+
+          <!-- Total Keuntungan / Laba Kotor (Khusus Admin) -->
+          <div class="admin-profit-field bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider">Estimasi Laba Kotor</span>
+              <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i class="fa-solid fa-arrow-trend-up"></i>
+              </div>
+            </div>
+            <div id="daily-total-profit" class="text-2xl font-bold font-mono text-blue-600">Rp 0</div>
+            <span class="text-[11px] text-slate-400 mt-1 block">Harga Jual dikurangi Modal</span>
+          </div>
+
+          <!-- Jumlah Transaksi -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider">Jumlah Transaksi</span>
+              <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                <i class="fa-solid fa-receipt"></i>
+              </div>
+            </div>
+            <div id="daily-total-count" class="text-2xl font-bold font-mono text-slate-800">0</div>
+            <span class="text-[11px] text-slate-400 mt-1 block">Struk / Nota belanja</span>
+          </div>
+
+          <!-- Rata-rata per Struk -->
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between text-slate-500 mb-2">
+              <span class="text-xs font-semibold uppercase tracking-wider">Rata-rata Belanja</span>
+              <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i class="fa-solid fa-basket-shopping"></i>
+              </div>
+            </div>
+            <div id="daily-avg-transaction" class="text-2xl font-bold font-mono text-slate-800">Rp 0</div>
+            <span class="text-[11px] text-slate-400 mt-1 block">Basket size pembeli</span>
+          </div>
+        </div>
+
+        <!-- Tabel Riwayat Transaksi Harian -->
+        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h4 class="font-bold text-slate-800 text-sm">Riwayat Struk Penjualan</h4>
+            <span id="daily-trx-count-badge" class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-semibold">0 Transaksi</span>
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500 sticky top-0">
+                <tr>
+                  <th class="py-3 px-4">No. Struk</th>
+                  <th class="py-3 px-4">Waktu</th>
+                  <th class="py-3 px-4">Kasir</th>
+                  <th class="py-3 px-4">Item Belanja</th>
+                  <th class="py-3 px-4">Metode</th>
+                  <th class="py-3 px-4 text-right admin-profit-field">Laba</th>
+                  <th class="py-3 px-4 text-right">Total</th>
+                  <th class="py-3 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="daily-trx-table-body" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+            <div id="daily-trx-empty" class="hidden text-center py-16 text-slate-400">
+              <i class="fa-solid fa-inbox text-4xl mb-2 text-slate-300"></i>
+              <p class="text-sm">Belum ada transaksi pada tanggal ini.</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= 5. TRANSAKSI BULANAN ================= -->
+      <section id="view-monthly" class="hidden h-full flex flex-col space-y-4">
+        
+        <!-- Filter Bulanan -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div class="flex items-center gap-3 w-full md:w-auto">
+            <label for="monthly-picker" class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-days text-emerald-600"></i>
+              <span>Pilih Bulan & Tahun:</span>
+            </label>
+            <input type="month" id="monthly-picker" onchange="app.loadMonthlyTransactions()"
+              class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-emerald-500">
+            <button onclick="app.setCurrentMonth()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">
+              Bulan Ini
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+            <button onclick="app.exportMonthlyCSV()" class="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl transition">
+              <i class="fa-solid fa-file-csv"></i>
+              <span>Ekspor Rekap Bulanan (CSV)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Bulanan Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Total Omzet Bulan Ini</span>
+            <div id="monthly-total-omzet" class="text-2xl font-bold font-mono text-emerald-600">Rp 0</div>
+            <span class="text-xs text-slate-400 mt-1 block" id="monthly-trx-count">0 transaksi total</span>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Total Keuntungan / Profit</span>
+            <div id="monthly-total-profit" class="text-2xl font-bold font-mono text-blue-600">Rp 0</div>
+            <span class="text-xs text-slate-400 mt-1 block" id="monthly-margin-rate">Margin keuntungan bersih</span>
+          </div>
+
+          <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-1">Rata-rata Omzet Harian</span>
+            <div id="monthly-avg-daily" class="text-2xl font-bold font-mono text-purple-600">Rp 0</div>
+            <span class="text-xs text-slate-400 mt-1 block">Dihitung per hari aktif</span>
+          </div>
+        </div>
+
+        <!-- Chart Penjualan Harian dalam Bulan -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+              <i class="fa-solid fa-chart-column text-emerald-600"></i>
+              <span>Grafik Performa Penjualan Harian</span>
+            </h4>
+            <span class="text-xs text-slate-400">Tren Penjualan per Tanggal</span>
+          </div>
+          <div class="h-64 w-full">
+            <canvas id="monthly-sales-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabel Rekap Per Tanggal dalam Bulan -->
+        <div class="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <h4 class="font-bold text-slate-800 text-sm">Rincian Penjualan Per Tanggal</h4>
+          </div>
+          <div class="flex-1 overflow-y-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500 sticky top-0">
+                <tr>
+                  <th class="py-3 px-4">Tanggal</th>
+                  <th class="py-3 px-4 text-center">Jumlah Transaksi</th>
+                  <th class="py-3 px-4 text-right">Total Omzet</th>
+                  <th class="py-3 px-4 text-right">Laba Kotor</th>
+                  <th class="py-3 px-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="monthly-breakdown-body" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= 6. PENGATURAN & BACKUP ================= -->
+      <section id="view-settings" class="hidden h-full flex flex-col space-y-5 overflow-y-auto">
+        <div class="max-w-4xl mx-auto w-full space-y-6">
+          
+          <!-- Pengaturan Toko -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-base mb-1 flex items-center gap-2">
+              <i class="fa-solid fa-store text-emerald-600"></i>
+              <span>Informasi Toko Aneka</span>
+            </h3>
+            <p class="text-xs text-slate-500 mb-5">Data ini akan dicetak pada bagian atas dan bawah struk belanja</p>
+
+            <form id="store-settings-form" onsubmit="app.saveStoreSettings(event)" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Toko</label>
+                  <input type="text" id="setting-store-name" required
+                    class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Telepon / WhatsApp</label>
+                  <input type="text" id="setting-phone"
+                    class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Alamat Toko</label>
+                <input type="text" id="setting-address"
+                  class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Pesan Penutup Struk (Footer)</label>
+                <textarea id="setting-footer" rows="2"
+                  class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500"></textarea>
+              </div>
+
+              <div class="flex justify-end">
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow transition">
+                  <i class="fa-solid fa-floppy-disk mr-1.5"></i> Simpan Pengaturan
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Manajemen Akun Pengguna & Kasir (Khusus Admin) -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                  <i class="fa-solid fa-users-gear text-indigo-600"></i>
+                  <span>Manajemen Pengguna & Kasir</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Kelola akun kasir toko dan administrator yang memiliki akses ke aplikasi</p>
+              </div>
+              <button onclick="app.openUserModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 self-start sm:self-auto">
+                <i class="fa-solid fa-user-plus"></i> Tambah Akun Kasir
+              </button>
+            </div>
+
+            <!-- Tabel Daftar Pengguna -->
+            <div class="overflow-x-auto border border-slate-200 rounded-xl">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase">
+                  <tr>
+                    <th class="py-3 px-4">Nama Lengkap</th>
+                    <th class="py-3 px-4">Username</th>
+                    <th class="py-3 px-4">Peran (Role)</th>
+                    <th class="py-3 px-4">Tanggal Dibuat</th>
+                    <th class="py-3 px-4 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body" class="divide-y divide-slate-100">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Pengaturan Pembayaran QRIS (Khusus Admin) -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <div>
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                    <i class="fa-solid fa-qrcode text-sm"></i>
+                  </div>
+                  <span>Pengaturan Pembayaran QRIS</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Konfigurasikan barcode QRIS toko Anda agar kasir dapat menerima pembayaran non-tunai</p>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 self-start sm:self-auto">
+                QRIS Toko
+              </span>
+            </div>
+
+            <form id="qris-settings-form" onsubmit="app.saveQrisSettings(event)" class="space-y-4">
+              <!-- Toggle Aktifkan QRIS -->
+              <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                <div>
+                  <span class="text-xs font-bold text-slate-800 block">Aktifkan Metode Pembayaran QRIS</span>
+                  <span class="text-[11px] text-slate-500">Tampilkan pilihan pembayaran QRIS di kasir</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="setting-qris-enabled" checked class="sr-only peer">
+                  <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                </label>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Merchant / Toko di QRIS</label>
+                  <input type="text" id="setting-qris-merchant" placeholder="Contoh: TOKO ANEKA KELONTONG"
+                    class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-rose-500">
+                  <p class="text-[10px] text-slate-400 mt-1">Nama yang tertera pada aplikasi m-Banking/e-wallet pelanggan saat scan</p>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1">NMID (National Merchant ID)</label>
+                  <input type="text" id="setting-qris-nmid" placeholder="Contoh: ID1020030040050"
+                    class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-rose-500">
+                  <p class="text-[10px] text-slate-400 mt-1">Kode unik NMID yang tercetak di bawah barcode QRIS Anda (opsional)</p>
+                </div>
+              </div>
+
+              <!-- Upload Barcode QRIS Toko -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Foto / Gambar Kode Barcode QRIS Toko
+                </label>
+                <input type="hidden" id="setting-qris-image">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-slate-200 rounded-2xl bg-slate-50/60">
+                  <!-- QR Preview Box -->
+                  <div class="w-36 h-36 bg-white border border-slate-300 rounded-xl flex items-center justify-center overflow-hidden p-2 shadow-sm shrink-0">
+                    <img id="setting-qris-preview" src="" alt="Barcode QRIS" class="hidden w-full h-full object-contain">
+                    <div id="setting-qris-placeholder" class="text-center text-slate-400 p-2">
+                      <i class="fa-solid fa-qrcode text-3xl text-slate-300 mb-1"></i>
+                      <span class="text-[10px] block leading-tight">Belum Ada Barcode</span>
+                    </div>
+                  </div>
+
+                  <!-- QR Upload Buttons & Help -->
+                  <div class="space-y-2 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <label class="cursor-pointer px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Gambar QRIS
+                        <input type="file" id="setting-qris-file" accept="image/*" onchange="app.handleQrisImageUpload(event)" class="hidden">
+                      </label>
+                      <button type="button" id="btn-remove-qris-img" onclick="app.removeQrisImage()" class="hidden px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl border border-rose-200 transition">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Hapus QRIS
+                      </button>
+                    </div>
+                    <p class="text-xs text-slate-600 font-medium">Unggah foto stiker atau file gambar QRIS resmi dari Bank / Dompet Digital Anda (BCA, Mandiri, BRI, BNI, GoPay, OVO, DANA, ShopeePay, dll).</p>
+                    <p class="text-[11px] text-slate-400">Barcode ini akan ditampilkan secara otomatis saat pelanggan memilih metode pembayaran QRIS di kasir.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Petunjuk Pembayaran -->
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Petunjuk Pembayaran (Opsional)</label>
+                <textarea id="setting-qris-instruction" rows="2" placeholder="Contoh: Buka aplikasi m-Banking atau e-Wallet favorit Anda, lalu scan barcode QRIS ini."
+                  class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-rose-500"></textarea>
+              </div>
+
+              <div class="flex justify-end pt-2">
+                <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan QRIS
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Backup & Restore Data -->
+          <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 class="font-bold text-slate-800 text-base mb-1 flex items-center gap-2">
+              <i class="fa-solid fa-database text-blue-600"></i>
+              <span>Cadangan & Pemulihan Data (Backup & Restore)</span>
+            </h3>
+            <p class="text-xs text-slate-500 mb-5">Amankan seluruh data barang, kategori, dan transaksi toko ke dalam file cadangan.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Backup -->
+              <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm mb-1">Unduh Cadangan (Backup JSON)</h4>
+                  <p class="text-xs text-slate-500 mb-4">Simpan file data lengkap Toko Aneka ke komputer Anda untuk keamanan.</p>
+                </div>
+                <button onclick="app.backupDatabase()" class="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                  <i class="fa-solid fa-download"></i> Unduh File Backup (.json)
+                </button>
+              </div>
+
+              <!-- Restore -->
+              <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm mb-1">Pulihkan Data (Restore)</h4>
+                  <p class="text-xs text-slate-500 mb-4">Kembalikan data toko dari file cadangan JSON yang pernah Anda unduh.</p>
+                </div>
+                <label class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs rounded-xl shadow transition flex items-center justify-center gap-2 cursor-pointer">
+                  <i class="fa-solid fa-upload"></i> Pilih File Backup JSON
+                  <input type="file" id="restore-file-input" accept=".json" onchange="app.restoreDatabase(event)" class="hidden">
+                </label>
+              </div>
+            </div>
+
+            <!-- Reset sample data button -->
+            <div class="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between">
+              <div>
+                <span class="text-xs font-bold text-rose-600 block">Muat Ulang Data Sampel Default</span>
+                <span class="text-[11px] text-slate-400">Kembalikan barang dan kategori awal standar toko kelontong.</span>
+              </div>
+              <button onclick="app.confirmResetData()" class="px-4 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition">
+                Reset ke Data Bawaan
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. MODAL SCANNER KAMERA -->
+  <div id="camera-scanner-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 fade-in">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-barcode text-emerald-400"></i>
+          <h3 class="font-bold text-sm">Pemindai Barcode Kamera</h3>
+        </div>
+        <button onclick="barcodeManager.stopCamera()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="p-4 flex flex-col items-center">
+        <!-- Kamera Box -->
+        <div class="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-inner flex items-center justify-center">
+          <div id="qr-reader" class="w-full h-full"></div>
+          <div class="scan-laser"></div>
+        </div>
+        <p class="text-xs text-slate-500 mt-3 text-center">
+          Arahkan garis merah ke barcode kemasan produk. Scanner akan otomatis berbunyi 'bip' saat terdeteksi.
+        </p>
+      </div>
+
+      <div class="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+        <button onclick="barcodeManager.stopCamera()" class="px-4 py-2 text-xs font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl transition">
+          Tutup Scanner
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MODAL TAMBAH / EDIT BARANG (STOKIS) -->
+  <div id="product-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 fade-in">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i class="fa-solid fa-box text-sm"></i>
+          </div>
+          <h3 id="product-modal-title" class="font-bold text-base">Tambah Item Penjualan</h3>
+        </div>
+        <button onclick="app.closeModal('product-modal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="product-form" onsubmit="app.saveProduct(event)" class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <input type="hidden" id="prod-id">
+
+        <!-- Barcode Field & Scanner Buttons -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Barcode / Kode SKU <span class="text-rose-500">*</span>
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="prod-barcode" required placeholder="Contoh: 8992775211025"
+              class="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+            <!-- Scan Kamera button -->
+            <button type="button" onclick="barcodeManager.startCamera('stock-input')" title="Scan barcode dengan kamera"
+              class="px-3 py-2 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-300 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+              <i class="fa-solid fa-camera"></i> Scan
+            </button>
+            <!-- Generate Barcode Acak -->
+            <button type="button" onclick="app.generateRandomBarcode()" title="Buat Barcode Acak"
+              class="px-3 py-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 border border-slate-300 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Buat
+            </button>
+          </div>
+        </div>
+
+        <!-- Nama Produk -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Nama Produk / Item <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="prod-name" required placeholder="Contoh: Minyak Goreng Bimoli 1 Liter"
+            class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <!-- Foto / Gambar Produk -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">
+            Foto Produk (Opsional)
+          </label>
+          <input type="hidden" id="prod-image">
+          <div class="flex items-center gap-3">
+            <!-- Preview Box -->
+            <div id="prod-image-preview-box" class="w-20 h-20 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0 relative group">
+              <img id="prod-image-preview" src="" alt="Preview" class="hidden w-full h-full object-cover">
+              <div id="prod-image-placeholder" class="flex flex-col items-center justify-center text-slate-400 text-center p-1">
+                <i class="fa-solid fa-cloud-arrow-up text-lg text-slate-300"></i>
+                <span class="text-[9px] mt-0.5 leading-tight">Pilih Foto</span>
+              </div>
+            </div>
+
+            <!-- Upload Controls -->
+            <div class="flex-1 space-y-1.5">
+              <div class="flex items-center gap-2">
+                <label class="cursor-pointer px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 rounded-lg text-xs font-semibold border border-slate-300 transition inline-flex items-center gap-1.5">
+                  <i class="fa-solid fa-upload"></i> Upload Gambar
+                  <input type="file" id="prod-image-input" accept="image/*" onchange="app.handleProductImageUpload(event)" class="hidden">
+                </label>
+                <button type="button" id="btn-remove-prod-image" onclick="app.removeProductImage()" class="hidden px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg border border-rose-200 transition">
+                  <i class="fa-solid fa-trash-can mr-1"></i> Hapus
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 leading-tight">Format JPG/PNG/WebP. Gambar otomatis dikompres agar hemat penyimpanan lokal.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kategori & Satuan -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              Kategori <span class="text-rose-500">*</span>
+            </label>
+            <select id="prod-category" required
+              class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              Satuan Barang <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="prod-unit" required placeholder="Pcs, Bungkus, Kg, Dus..."
+              class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <!-- Harga Beli (Modal) & Harga Jual -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              Harga Modal (Beli) Rp <span class="text-rose-500">*</span>
+            </label>
+            <input type="number" id="prod-buy-price" required min="0" placeholder="0"
+              class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              Harga Jual Rp <span class="text-rose-500">*</span>
+            </label>
+            <input type="number" id="prod-sell-price" required min="0" placeholder="0"
+              class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <!-- Stok & Minimum Stok Alert -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              Jumlah Stok Sekarang <span class="text-rose-500">*</span>
+            </label>
+            <input type="number" id="prod-stock" required min="0" placeholder="0"
+              class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">
+              Batas Minimum Stok (Alert) <span class="text-rose-500">*</span>
+            </label>
+            <input type="number" id="prod-min-stock" required min="0" value="5"
+              class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+          <button type="button" id="btn-delete-prod" onclick="app.deleteProduct()" class="hidden text-xs text-rose-600 font-semibold hover:underline">
+            <i class="fa-solid fa-trash mr-1"></i> Hapus Item
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="app.closeModal('product-modal')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+              Batal
+            </button>
+            <button type="submit" class="px-5 py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition">
+              Simpan Barang
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. MODAL TAMBAH / EDIT KATEGORI -->
+  <div id="category-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200 fade-in">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+        <h3 id="category-modal-title" class="font-bold text-sm">Tambah Kategori Baru</h3>
+        <button onclick="app.closeModal('category-modal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="category-form" onsubmit="app.saveCategory(event)" class="p-4 space-y-4">
+        <input type="hidden" id="cat-id">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Kategori</label>
+          <input type="text" id="cat-name" required placeholder="Contoh: Bumbu Dapur, Perlengkapan Mandi"
+            class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Ikon</label>
+          <select id="cat-icon" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
+            <option value="fa-wheat-awn">🌾 Sembako & Gandum</option>
+            <option value="fa-mug-hot">☕ Minuman & Kopi</option>
+            <option value="fa-bowl-food">🍜 Makanan & Mi</option>
+            <option value="fa-pepper-hot">🌶️ Bumbu & Cabai</option>
+            <option value="fa-soap">🧼 Sabun & Mandi</option>
+            <option value="fa-cookie">🍪 Biskuit & Snack</option>
+            <option value="fa-candy-cane">🍬 Permen</option>
+            <option value="fa-bottle-droplet">🧴 Minyak & Cairan</option>
+            <option value="fa-box-open">📦 Umum / Lainnya</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Warna Label</label>
+          <div class="flex items-center gap-2">
+            <input type="color" id="cat-color" value="#16a34a" class="w-10 h-10 rounded-xl cursor-pointer border border-slate-200 p-1">
+            <span class="text-xs text-slate-500">Warna kartu kategori</span>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="app.closeModal('category-modal')" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+            Batal
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow transition">
+            Simpan Kategori
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 4. MODAL PEMBAYARAN KASIR -->
+  <div id="payment-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 fade-in">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-600 text-white">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-calculator text-lg"></i>
+          <h3 class="font-bold text-base">Pembayaran Kasir</h3>
+        </div>
+        <button onclick="app.closeModal('payment-modal')" class="w-8 h-8 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <!-- Tagihan Total -->
+        <div class="text-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total yang Harus Dibayar</span>
+          <span id="modal-pay-total" class="text-3xl font-black font-mono text-emerald-600">Rp 0</span>
+        </div>
+
+        <!-- Pilihan Metode Pembayaran -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">Metode Pembayaran</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" onclick="app.setPaymentMethod('Tunai')" id="pay-method-tunai"
+              class="pay-method-btn py-2 text-xs font-bold rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-700">
+              💵 Tunai
+            </button>
+            <button type="button" onclick="app.setPaymentMethod('QRIS')" id="pay-method-qris"
+              class="pay-method-btn py-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
+              📱 QRIS
+            </button>
+            <button type="button" onclick="app.setPaymentMethod('Transfer')" id="pay-method-transfer"
+              class="pay-method-btn py-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">
+              💳 Transfer
+            </button>
+          </div>
+        </div>
+
+        <!-- Input Uang Diterima -->
+        <div id="cash-payment-section">
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Uang Diterima (Rp)</label>
+          <input type="number" id="modal-cash-input" oninput="app.calculateChange()" placeholder="0" min="0"
+            class="w-full px-4 py-3 border-2 border-emerald-500 rounded-xl text-xl font-bold font-mono focus:outline-none">
+          
+          <!-- Tombol Cepat Pecahan Uang Rupiah -->
+          <div class="grid grid-cols-4 gap-1.5 mt-2.5">
+            <button type="button" onclick="app.setExactCash()" class="py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">
+              Uang Pas
+            </button>
+            <button type="button" onclick="app.setQuickCash(20000)" class="py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-mono rounded-lg">
+              20.000
+            </button>
+            <button type="button" onclick="app.setQuickCash(50000)" class="py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-mono rounded-lg">
+              50.000
+            </button>
+            <button type="button" onclick="app.setQuickCash(100000)" class="py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-mono rounded-lg">
+              100.000
+            </button>
+          </div>
+
+          <!-- Kembalian -->
+          <div class="mt-4 p-3 bg-slate-100 rounded-xl flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">Uang Kembalian:</span>
+            <span id="modal-change-amount" class="text-xl font-black font-mono text-slate-900">Rp 0</span>
+          </div>
+        </div>
+
+        <!-- Section Pembayaran QRIS -->
+        <div id="qris-payment-section" class="hidden space-y-3">
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center text-center">
+            <!-- Header QRIS -->
+            <div class="flex items-center gap-1.5 mb-1.5">
+              <span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white tracking-wider">
+                QRIS
+              </span>
+              <span id="modal-qris-merchant" class="text-xs font-bold text-slate-800 truncate max-w-[220px]">
+                Toko Aneka
+              </span>
+            </div>
+            <span id="modal-qris-nmid" class="text-[10px] font-mono text-slate-400 mb-2.5">NMID: ID1020030040050</span>
+
+            <!-- QR Code Frame -->
+            <div id="modal-qris-box" class="w-48 h-48 bg-white border-2 border-slate-300 rounded-2xl p-2.5 flex items-center justify-center shadow-inner relative overflow-hidden">
+              <img id="modal-qris-image" src="" alt="Scan Barcode QRIS" class="w-full h-full object-contain">
+              <div id="modal-qris-fallback" class="hidden flex flex-col items-center justify-center text-slate-400 p-2 text-center">
+                <i class="fa-solid fa-qrcode text-4xl text-rose-400 mb-2"></i>
+                <p class="text-xs font-bold text-slate-700">QRIS Toko Belum Diunggah</p>
+                <p class="text-[10px] text-slate-500 mt-1">Upload gambar barcode QRIS Anda pada menu Pengaturan Toko.</p>
+              </div>
+            </div>
+
+            <!-- Petunjuk & Nominal Tagihan -->
+            <div class="mt-3 p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 w-full text-center">
+              <span class="text-[10px] text-emerald-700 font-semibold block">Total yang Harus Dibayar:</span>
+              <span id="modal-qris-amount" class="text-lg font-black font-mono text-emerald-700">Rp 0</span>
+            </div>
+
+            <p id="modal-qris-instruction" class="text-[11px] text-slate-500 mt-2 leading-tight">
+              Buka aplikasi m-Banking atau e-Wallet favorit Anda, lalu scan barcode QRIS di atas.
+            </p>
+          </div>
+        </div>
+
+        <!-- Section Pembayaran Transfer Bank -->
+        <div id="transfer-payment-section" class="hidden space-y-3">
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5 text-center">
+            <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center mx-auto text-base">
+              <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <h4 class="font-bold text-xs text-slate-800">Transfer Rekening Toko</h4>
+            <p class="text-[11px] text-slate-500">Pastikan pembeli telah mentransfer sesuai nominal total tagihan dan memperlihatkan bukti transfer sebelum menyelesaikan transaksi.</p>
+            <div class="p-2.5 bg-white border border-slate-200 rounded-xl font-mono text-xs text-slate-700 text-left space-y-1">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Penerima:</span>
+                <span class="font-bold text-slate-800" id="transfer-store-name">Toko Aneka</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-slate-400">Total:</span>
+                <span class="font-bold text-blue-700" id="transfer-total-amount">Rp 0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Selesaikan Pembayaran -->
+        <button onclick="app.processCheckout()" id="btn-complete-checkout"
+          class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Selesaikan Transaksi & Cetak Struk</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. MODAL STRUK TRANSAKSI (RECEIPT) -->
+  <div id="receipt-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200 fade-in flex flex-col max-h-[90vh]">
+      <div class="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+        <h3 class="font-bold text-sm">Struk Belanja Toko Aneka</h3>
+        <button onclick="app.closeModal('receipt-modal')" class="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Preview Struk (Thermal Format 58mm) -->
+      <div class="p-4 flex-1 overflow-y-auto bg-slate-50 flex justify-center">
+        <div id="print-area" class="w-full max-w-[290px] bg-white p-4 shadow-sm border border-slate-200 text-xs font-receipt text-slate-800">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <div class="p-3 border-t border-slate-100 bg-white flex gap-2">
+        <button onclick="window.print()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-print"></i> Cetak Struk (Thermal)
+        </button>
+        <button onclick="app.closeModal('receipt-modal')" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition">
+          Selesai
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. MODAL CETAK LABEL BARCODE PRODUK -->
+  <div id="barcode-print-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200 fade-in">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+        <h3 class="font-bold text-sm">Cetak Label Barcode Produk</h3>
+        <button onclick="app.closeModal('barcode-print-modal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-5 flex flex-col items-center">
+        <div id="barcode-sticker-preview" class="p-4 bg-white border border-slate-300 rounded-xl flex flex-col items-center text-center">
+          <h4 id="label-prod-name" class="font-bold text-xs mb-1 text-slate-800 max-w-[200px] truncate">Indomie Goreng</h4>
+          <svg id="barcode-svg" class="w-full"></svg>
+          <div id="label-prod-price" class="font-bold text-sm text-emerald-700 font-mono mt-1">Rp 3.500</div>
+        </div>
+      </div>
+
+      <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-2 justify-end">
+        <button onclick="app.closeModal('barcode-print-modal')" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-xl">
+          Tutup
+        </button>
+        <button onclick="app.printBarcodeLabelOnly()" class="px-4 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow flex items-center gap-1.5">
+          <i class="fa-solid fa-print"></i> Cetak Label
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. MODAL PENGGUNA / KASIR (TAMBAH / EDIT) -->
+  <div id="user-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200 fade-in">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-900 text-white">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-indigo-400"></i>
+          <h3 id="user-modal-title" class="font-bold text-sm">Tambah Pengguna Baru</h3>
+        </div>
+        <button onclick="app.closeModal('user-modal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="user-form" onsubmit="app.saveUser(event)" class="p-5 space-y-4">
+        <input type="hidden" id="user-id">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+          <input type="text" id="user-fullname" required placeholder="Contoh: Siti Rahmawati"
+            class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Username (ID Masuk)</label>
+          <input type="text" id="user-username" required placeholder="Contoh: kasir2"
+            class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi / Password</label>
+          <input type="text" id="user-password" required placeholder="Minimal 4 karakter"
+            class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Peran Akses (Role)</label>
+          <select id="user-role" required
+            class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="kasir">Kasir (Hanya POS & Riwayat Transaksi)</option>
+            <option value="admin">Administrator (Akses Penuh Seluruh Sistem)</option>
+          </select>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex gap-2 justify-end">
+          <button type="button" onclick="app.closeModal('user-modal')"
+            class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
+            Batal
+          </button>
+          <button type="submit"
+            class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan Pengguna
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-700 fade-in text-xs">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+    <span id="toast-msg">Notifikasi</span>
+  </div>
+
+  <!-- App Scripts -->
+  <script src="js/db.js"></script>
+  <script src="js/scanner.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
